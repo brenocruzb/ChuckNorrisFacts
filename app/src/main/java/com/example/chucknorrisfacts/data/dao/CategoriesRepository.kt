@@ -6,11 +6,11 @@ import io.reactivex.Observable
 
 class CategoriesRepository(private val categoriesDao: CategoriesDao): BaseRepository() {
     fun getAllSuggestions(): Observable<List<Category>>{
-        return categoriesDao.getAllSuggestions().compose(applyObservableAsync())
+        return categoriesDao.getAllSuggestions().compose(applyObservableAsync()).take(1)
     }
 
-    fun getAllPastSearches(): Observable<List<Category>>{
-        return categoriesDao.getAllPastSearches().compose(applyObservableAsync())
+    fun getAllPastSearchesByDate(): Observable<List<Category>>{
+        return categoriesDao.getAllPastSearchesByDate().compose(applyObservableAsync()).take(1)
     }
 
     fun insertAll(categories: List<Category>) {
@@ -27,6 +27,12 @@ class CategoriesRepository(private val categoriesDao: CategoriesDao): BaseReposi
 
     fun delete(category: Category){
         categoriesDao.delete(category)
+            .compose(applyCompletableAsync())
+            .subscribe()
+    }
+
+    fun update(category: Category){
+        categoriesDao.update(category)
             .compose(applyCompletableAsync())
             .subscribe()
     }

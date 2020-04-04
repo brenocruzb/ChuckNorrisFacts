@@ -7,13 +7,13 @@ import com.example.chucknorrisfacts.data.dao.CategoriesRepository
 import com.example.chucknorrisfacts.data.model.Category
 import com.example.chucknorrisfacts.data.model.Fact
 import com.example.chucknorrisfacts.data.rest.ChuckNorrisRepository
-import java.util.*
+import com.example.chucknorrisfacts.util.customMessage
+import java.util.Date
 
 class SearchViewModel(
     private val chuckNorrisRepository: ChuckNorrisRepository,
     private val categoriesRepository: CategoriesRepository
 ): BaseViewModel(){
-    private val locale = Locale("pt", "BR")
 
     private val mutableSuggestionCategories = MutableLiveData<List<Category>>()
     val suggestionCategories : LiveData<List<Category>> get() = mutableSuggestionCategories
@@ -52,25 +52,27 @@ class SearchViewModel(
     }
 
     private fun loadPastSearch() {
-        val list = categoriesRepository.getAllPastSearches().subscribe{ categories ->
+        val list = categoriesRepository.getAllPastSearchesByDate().subscribe{ categories ->
             mutablePastSearchCategories.value = categories
         }
         compositeDisposable.add(list)
     }
 
     fun savePastSearch(pastSearch: String?){
-        val daoCategories = categoriesRepository.getAllPastSearches().
+        val daoCategories = categoriesRepository.getAllPastSearchesByDate().
                 subscribe { categories ->
-                    if (categories.size > 8){
-                        categoriesRepository.delete(categories[0])
-                        savePastSearch(pastSearch)
-                    }else if(
-                        !pastSearch.isNullOrEmpty() &&
-                        !categories.map { t -> t.name.toLowerCase(locale) }
-                            .contains(pastSearch.toLowerCase(locale))
-                    ){
-                        val category = Category(pastSearch, isSuggestion = false)
-                        categoriesRepository.insert(category)
+                    if(!pastSearch.isNullOrEmpty()){
+                        val actualCategory: Category? = categories.find { t ->
+                            t.name == pastSearch
+                        }
+
+                        if(actualCategory != null){
+                            actualCategory.date = Date()
+                            categoriesRepository.update(actualCategory)
+                        }else{
+                            val category = Category(pastSearch, isSuggestion = false, date = Date())
+                            categoriesRepository.insert(category)
+                        }
                     }
                 }
         compositeDisposable.add(daoCategories)
@@ -84,7 +86,11 @@ class SearchViewModel(
                 else
                     chuckNorrisRepository.randomFact()
                 )
-            .subscribe(onNext(mutableFact), onError)
+            .subscribe(onNext(mutableFact), { e ->
+                mutableError.value = e.customMessage()
+                mutableLoading.value = false
+                loadPastSearch()
+            })
 
         compositeDisposable.add(disposable)
     }

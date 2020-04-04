@@ -74,7 +74,7 @@ class SearchActivity: BaseActivity(), TagView.OnTagClickListener {
     private fun loadAdapter(searchCategories: List<Category>) {
         val searchAdapter: SearchAdapter by inject {
             parametersOf(
-                searchCategories.reversed(),
+                searchCategories,
                 { search: String -> searchFact(search) }
             )
         }
@@ -85,6 +85,8 @@ class SearchActivity: BaseActivity(), TagView.OnTagClickListener {
             adapter = searchAdapter
         }
     }
+
+
 
     override fun onSelectedTagDrag(position: Int, text: String?) {}
 
